@@ -5,6 +5,7 @@ import { validateEnv } from './config/env.validation';
 import { CorrelationModule } from './correlation/correlation.module';
 import { CorrelationService } from './correlation/correlation.service';
 import { DatabaseModule } from './database/database.module';
+import { GrpcModule } from './grpc/grpc.module';
 import { HealthModule } from './health/health.module';
 import { KafkaModule } from './kafka/kafka.module';
 import { NotificationsModule } from './notifications/notifications.module';
@@ -35,6 +36,7 @@ import { NotificationsModule } from './notifications/notifications.module';
       }),
     }),
     DatabaseModule,
+    GrpcModule,
     NotificationsModule,
     KafkaModule,
     HealthModule,

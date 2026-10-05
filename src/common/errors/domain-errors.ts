@@ -38,3 +38,10 @@ export class UnauthenticatedError extends DomainError {
 export class FailedPreconditionError extends DomainError {
   readonly kind = 'FAILED_PRECONDITION';
 }
+
+export class UnavailableError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'UnavailableError';
+  }
+}

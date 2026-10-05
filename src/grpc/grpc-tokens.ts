@@ -1,0 +1,1 @@
+export const USER_GRPC_PACKAGE = 'USER_GRPC_PACKAGE';
