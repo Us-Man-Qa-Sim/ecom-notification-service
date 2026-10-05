@@ -87,6 +87,57 @@ export class NotificationsService {
     }
   }
 
+  /**
+   * Retry a single FAILED notification. Resolves the recipient email via gRPC,
+   * re-renders the template, and attempts delivery. Whether it succeeds or
+   * fails, `attempts` is incremented and the status is updated accordingly.
+   *
+   * Called exclusively by the retry job (NTF-7) — callers must ensure
+   * `doc.attempts < maxAttempts` before calling.
+   */
+  async retryOne(doc: NotificationDocument): Promise<void> {
+    let email: string;
+    let firstName: string;
+
+    try {
+      const res = await callGrpc(
+        this.userClient.service.getUser({ userId: doc.userId }),
+        this.timeouts.standard,
+        'user-service',
+      );
+      if (!res.user) throw new Error(`GetUser returned no user for userId ${doc.userId}`);
+      email = res.user.email;
+      firstName = res.user.firstName;
+    } catch (err: unknown) {
+      this.logger.warn({ err, userId: doc.userId, id: String(doc._id) }, 'Retry: failed to resolve recipient email');
+      await this.markFailed(doc, toMessage(err));
+      return;
+    }
+
+    const { subject, html } = renderTemplate(doc.type, {
+      firstName,
+      orderId: doc.orderId,
+      reason: undefined,
+    });
+
+    try {
+      await this.mailer.send({ to: email, subject, html });
+      await this.markSent(doc);
+    } catch (err: unknown) {
+      this.logger.warn({ err, to: email, id: String(doc._id) }, 'Retry: failed to send email');
+      await this.markFailed(doc, toMessage(err));
+    }
+  }
+
+  /** Find FAILED notifications still eligible for a retry attempt. */
+  async findEligibleForRetry(maxAttempts: number): Promise<NotificationDocument[]> {
+    return this.model
+      .find({ status: NotificationStatus.FAILED, attempts: { $lt: maxAttempts } })
+      .limit(100)
+      .lean<NotificationDocument[]>()
+      .exec();
+  }
+
   private async insertPending(input: SendNotificationInput): Promise<NotificationDocument | null> {
     try {
       return await this.model.create({

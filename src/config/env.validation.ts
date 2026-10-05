@@ -43,6 +43,12 @@ export const envSchema = z.object({
 
   // gRPC address of user-service for GetUser lookups (NTF-3).
   USER_SERVICE_URL: z.string().default('localhost:5001'),
+
+  // Retry job (NTF-7): stop retrying a FAILED notification once it has been
+  // attempted this many times in total (initial attempt counts as 1).
+  NOTIFICATION_RETRY_MAX_ATTEMPTS: numericString(5),
+  // How often (ms) the retry job scans for eligible FAILED notifications.
+  NOTIFICATION_RETRY_INTERVAL_MS: numericString(60_000),
 });
 
 export type Env = z.infer<typeof envSchema>;

@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Notification, NotificationSchema } from './notification.schema';
 import { NotificationsService } from './notifications.service';
+import { RetryJob } from './retry.job';
 import { UserRegisteredHandler } from './handlers/user-registered.handler';
 import { OrderConfirmedHandler } from './handlers/order-confirmed.handler';
 import { OrderCancelledHandler } from './handlers/order-cancelled.handler';
@@ -24,7 +25,7 @@ const HANDLERS = [
     MailerModule,
     GrpcModule,
   ],
-  providers: [NotificationsService, ...HANDLERS],
+  providers: [NotificationsService, RetryJob, ...HANDLERS],
   exports: [NotificationsService],
 })
 export class NotificationsModule {}

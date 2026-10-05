@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
 import { LoggerModule } from 'nestjs-pino';
 import { validateEnv } from './config/env.validation';
 import { CorrelationModule } from './correlation/correlation.module';
@@ -17,6 +18,7 @@ import { NotificationsModule } from './notifications/notifications.module';
       cache: true,
       validate: validateEnv,
     }),
+    ScheduleModule.forRoot(),
     CorrelationModule,
     LoggerModule.forRootAsync({
       inject: [CorrelationService],

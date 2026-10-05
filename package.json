@@ -30,6 +30,7 @@
     "@nestjs/microservices": "12.1.2",
     "@nestjs/mongoose": "12.0.0",
     "@nestjs/platform-express": "12.1.2",
+    "@nestjs/schedule": "12.0.2",
     "@nestjs/terminus": "12.1.0",
     "@types/nodemailer": "8.0.2",
     "@us-man-qa-sim/ecom-contracts": "0.1.0",
