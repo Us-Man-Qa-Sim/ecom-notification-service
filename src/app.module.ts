@@ -7,6 +7,7 @@ import { CorrelationService } from './correlation/correlation.service';
 import { DatabaseModule } from './database/database.module';
 import { HealthModule } from './health/health.module';
 import { KafkaModule } from './kafka/kafka.module';
+import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { KafkaModule } from './kafka/kafka.module';
       }),
     }),
     DatabaseModule,
+    NotificationsModule,
     KafkaModule,
     HealthModule,
   ],
