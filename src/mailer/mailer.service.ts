@@ -3,6 +3,10 @@ import { ConfigService } from '@nestjs/config';
 import { createTransport } from 'nodemailer';
 import type { Env } from '../config/env.validation';
 
+const SMTP_CONNECTION_TIMEOUT_MS = 10_000;
+const SMTP_GREETING_TIMEOUT_MS = 10_000;
+const SMTP_SOCKET_TIMEOUT_MS = 30_000;
+
 export interface SendMailOptions {
   to: string;
   subject: string;
@@ -23,6 +27,12 @@ export class MailerService implements OnModuleInit {
       host: this.config.get('SMTP_HOST', { infer: true }),
       port: this.config.get('SMTP_PORT', { infer: true }),
       secure: this.config.get('SMTP_SECURE', { infer: true }),
+      // nodemailer defaults (2 min connect, 10 min socket) would stall a Kafka
+      // partition and outlive NOTIFICATION_PENDING_STALE_MS, letting the retry
+      // job re-send a message that is still in flight.
+      connectionTimeout: SMTP_CONNECTION_TIMEOUT_MS,
+      greetingTimeout: SMTP_GREETING_TIMEOUT_MS,
+      socketTimeout: SMTP_SOCKET_TIMEOUT_MS,
     });
   }
 

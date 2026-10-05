@@ -20,8 +20,9 @@ export const envSchema = z.object({
   HTTP_HOST: z.string().default('0.0.0.0'),
   HTTP_PORT: numericString(8084),
 
-  // MongoDB connection string. Must point at the `rs0` replica set so that
-  // deduplication via the unique `eventId` index uses a retryable write path.
+  // MongoDB connection string (`notification` DB on the `rs0` replica set).
+  // Indexes — including the unique `eventId` inbox index (NTF-6) — are built by
+  // `sync-indexes` at container start, since production runs with autoIndex off.
   MONGO_URI: z.string().min(1),
 
   // Kafka consumer (no producer — this service never publishes events).
@@ -39,7 +40,7 @@ export const envSchema = z.object({
     .enum(['true', 'false'])
     .default('false')
     .transform((v) => v === 'true'),
-  SMTP_FROM: z.string().email().default('noreply@ecom.local'),
+  SMTP_FROM: z.email().default('noreply@ecom.local'),
 
   // gRPC address of user-service for GetUser lookups (NTF-3).
   USER_SERVICE_URL: z.string().default('localhost:5001'),
@@ -49,6 +50,14 @@ export const envSchema = z.object({
   NOTIFICATION_RETRY_MAX_ATTEMPTS: numericString(5),
   // How often (ms) the retry job scans for eligible FAILED notifications.
   NOTIFICATION_RETRY_INTERVAL_MS: numericString(60_000),
+  // Backoff before retrying a FAILED row: base after the 1st failure, doubling
+  // after each further one (capped at 1 h). Defaults give 1/2/4/8 min ≈ 15 min
+  // of outage tolerance across 5 attempts.
+  NOTIFICATION_RETRY_BASE_DELAY_MS: numericString(60_000),
+  // A PENDING row untouched for this long was abandoned (crash between insert
+  // and send) and is picked up by the retry job. Must comfortably exceed one
+  // delivery: gRPC GetUser timeout (5 s) + SMTP timeouts (see MailerService).
+  NOTIFICATION_PENDING_STALE_MS: numericString(300_000),
 });
 
 export type Env = z.infer<typeof envSchema>;

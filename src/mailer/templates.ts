@@ -1,3 +1,5 @@
+import { NotificationType } from '../notifications/notification.schema';
+
 const BRAND = 'ecom';
 const SUPPORT = 'support@ecom.local';
 
@@ -10,6 +12,23 @@ export interface TemplateContext {
 export interface RenderedEmail {
   subject: string;
   html: string;
+}
+
+const HTML_ESCAPES: Record<string, string> = {
+  '&': '&amp;',
+  '<': '&lt;',
+  '>': '&gt;',
+  '"': '&quot;',
+  "'": '&#39;',
+};
+
+/**
+ * Every interpolated value is user-controlled (first name is free text at
+ * registration, cancel reason may echo input), so it must be escaped before it
+ * lands in HTML — otherwise a name like `<a href=…>` renders as markup.
+ */
+export function escapeHtml(value: string): string {
+  return value.replace(/[&<>"']/g, (ch) => HTML_ESCAPES[ch]);
 }
 
 function layout(title: string, body: string): string {
@@ -31,7 +50,7 @@ function layout(title: string, body: string): string {
 }
 
 function orderTable(orderId: string | null | undefined): string {
-  const id = orderId ?? 'N/A';
+  const id = escapeHtml(orderId ?? 'N/A');
   return `<table style="background:#f9f9f9;border-radius:4px;padding:16px 20px;margin:16px 0;width:100%;box-sizing:border-box">
       <tr><td style="color:#999;font-size:12px;padding-bottom:4px">Order ID</td></tr>
       <tr><td style="font-family:monospace;font-size:13px;color:#333;word-break:break-all">${id}</td></tr>
@@ -44,85 +63,95 @@ function shortRef(orderId: string | null | undefined): string {
 }
 
 function greet(ctx: TemplateContext): string {
-  return `<p style="font-size:16px;color:#333;margin:0 0 12px">Hi ${ctx.firstName || 'there'},</p>`;
+  const name = ctx.firstName ? escapeHtml(ctx.firstName) : 'there';
+  return `<p style="font-size:16px;color:#333;margin:0 0 12px">Hi ${name},</p>`;
 }
 
 function welcomeEmail(ctx: TemplateContext): RenderedEmail {
   return {
     subject: `Welcome to ${BRAND}!`,
-    html: layout(`Welcome to ${BRAND}`, `
+    html: layout(
+      `Welcome to ${BRAND}`,
+      `
       ${greet(ctx)}
       <p style="color:#555;margin:0 0 16px">Welcome to <strong>${BRAND}</strong>! Your account is all set up.</p>
       <p style="color:#555;margin:0">Start browsing our products and place your first order.</p>
-    `),
+    `,
+    ),
   };
 }
 
 function orderConfirmedEmail(ctx: TemplateContext): RenderedEmail {
   return {
     subject: `Your order is confirmed — #${shortRef(ctx.orderId)}`,
-    html: layout('Order Confirmed', `
+    html: layout(
+      'Order Confirmed',
+      `
       ${greet(ctx)}
       <p style="color:#555;margin:0 0 8px">Your order has been <strong>confirmed</strong>.</p>
       ${orderTable(ctx.orderId)}
       <p style="color:#555;margin:0">We will notify you once your order has shipped.</p>
-    `),
+    `,
+    ),
   };
 }
 
 function orderCancelledEmail(ctx: TemplateContext): RenderedEmail {
   const reasonRow = ctx.reason
-    ? `<p style="color:#555;margin:8px 0 0"><strong>Reason:</strong> ${ctx.reason}</p>`
+    ? `<p style="color:#555;margin:8px 0 0"><strong>Reason:</strong> ${escapeHtml(ctx.reason)}</p>`
     : '';
   return {
     subject: `Your order has been cancelled — #${shortRef(ctx.orderId)}`,
-    html: layout('Order Cancelled', `
+    html: layout(
+      'Order Cancelled',
+      `
       ${greet(ctx)}
       <p style="color:#555;margin:0 0 8px">Your order has been <strong>cancelled</strong>.</p>
       ${orderTable(ctx.orderId)}
       ${reasonRow}
       <p style="color:#555;margin:8px 0 0">If you have questions, please contact our support team.</p>
-    `),
+    `,
+    ),
   };
 }
 
 function orderShippedEmail(ctx: TemplateContext): RenderedEmail {
   return {
     subject: `Your order has shipped — #${shortRef(ctx.orderId)}`,
-    html: layout('Order Shipped', `
+    html: layout(
+      'Order Shipped',
+      `
       ${greet(ctx)}
       <p style="color:#555;margin:0 0 8px">Your order is on its way!</p>
       ${orderTable(ctx.orderId)}
       <p style="color:#555;margin:0">We will let you know once it has been delivered.</p>
-    `),
+    `,
+    ),
   };
 }
 
 function orderDeliveredEmail(ctx: TemplateContext): RenderedEmail {
   return {
     subject: `Your order has been delivered — #${shortRef(ctx.orderId)}`,
-    html: layout('Order Delivered', `
+    html: layout(
+      'Order Delivered',
+      `
       ${greet(ctx)}
       <p style="color:#555;margin:0 0 8px">Your order has been <strong>delivered</strong>. We hope you enjoy it!</p>
       ${orderTable(ctx.orderId)}
-    `),
+    `,
+    ),
   };
 }
 
-export function renderTemplate(type: string, ctx: TemplateContext): RenderedEmail {
-  switch (type) {
-    case 'user.registered':  return welcomeEmail(ctx);
-    case 'order.confirmed':  return orderConfirmedEmail(ctx);
-    case 'order.cancelled':  return orderCancelledEmail(ctx);
-    case 'order.shipped':    return orderShippedEmail(ctx);
-    case 'order.delivered':  return orderDeliveredEmail(ctx);
-    default:
-      return {
-        subject: `${BRAND} — notification`,
-        html: layout('Notification', `
-          ${greet(ctx)}
-          <p style="color:#555">You have a new notification.</p>
-        `),
-      };
-  }
+const TEMPLATES: Record<NotificationType, (ctx: TemplateContext) => RenderedEmail> = {
+  [NotificationType.WELCOME]: welcomeEmail,
+  [NotificationType.ORDER_CONFIRMED]: orderConfirmedEmail,
+  [NotificationType.ORDER_CANCELLED]: orderCancelledEmail,
+  [NotificationType.ORDER_SHIPPED]: orderShippedEmail,
+  [NotificationType.ORDER_DELIVERED]: orderDeliveredEmail,
+};
+
+export function renderTemplate(type: NotificationType, ctx: TemplateContext): RenderedEmail {
+  return TEMPLATES[type](ctx);
 }

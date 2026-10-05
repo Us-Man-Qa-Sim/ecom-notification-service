@@ -2,12 +2,11 @@ import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { TOPICS, type TypedEventEnvelope } from '@us-man-qa-sim/ecom-contracts/events';
 import type { TopicHandler } from '../../kafka/consumer';
 import { KafkaConsumerService } from '../../kafka/kafka-consumer.service';
+import { NotificationType } from '../notification.schema';
 import { NotificationsService } from '../notifications.service';
 
 @Injectable()
-export class OrderCancelledHandler
-  implements TopicHandler<'order.cancelled'>, OnModuleInit
-{
+export class OrderCancelledHandler implements TopicHandler<'order.cancelled'>, OnModuleInit {
   private readonly logger = new Logger(OrderCancelledHandler.name);
 
   constructor(
@@ -29,7 +28,7 @@ export class OrderCancelledHandler
       eventId,
       userId,
       orderId,
-      type: TOPICS.ORDER_CANCELLED,
+      type: NotificationType.ORDER_CANCELLED,
       reason,
     });
   }
