@@ -23,15 +23,13 @@ export class OrderShippedHandler
     const { eventId, payload } = event;
     const { orderId, userId } = payload;
 
-    const created = await this.notifications.createPending({
+    this.logger.log({ eventId, orderId, userId }, 'Handling order.shipped');
+
+    await this.notifications.createAndSend({
       eventId,
       userId,
       orderId,
       type: TOPICS.ORDER_SHIPPED,
     });
-
-    if (created) {
-      this.logger.log({ eventId, orderId, userId }, 'order.shipped notification queued');
-    }
   }
 }

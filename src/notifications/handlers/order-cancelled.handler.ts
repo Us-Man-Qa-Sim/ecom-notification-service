@@ -21,17 +21,16 @@ export class OrderCancelledHandler
 
   async handle(event: TypedEventEnvelope<'order.cancelled'>): Promise<void> {
     const { eventId, payload } = event;
-    const { orderId, userId } = payload;
+    const { orderId, userId, reason } = payload;
 
-    const created = await this.notifications.createPending({
+    this.logger.log({ eventId, orderId, userId }, 'Handling order.cancelled');
+
+    await this.notifications.createAndSend({
       eventId,
       userId,
       orderId,
       type: TOPICS.ORDER_CANCELLED,
+      reason,
     });
-
-    if (created) {
-      this.logger.log({ eventId, orderId, userId }, 'order.cancelled notification queued');
-    }
   }
 }

@@ -7,6 +7,8 @@ import { OrderConfirmedHandler } from './handlers/order-confirmed.handler';
 import { OrderCancelledHandler } from './handlers/order-cancelled.handler';
 import { OrderShippedHandler } from './handlers/order-shipped.handler';
 import { OrderDeliveredHandler } from './handlers/order-delivered.handler';
+import { MailerModule } from '../mailer/mailer.module';
+import { GrpcModule } from '../grpc/grpc.module';
 
 const HANDLERS = [
   UserRegisteredHandler,
@@ -19,6 +21,8 @@ const HANDLERS = [
 @Module({
   imports: [
     MongooseModule.forFeature([{ name: Notification.name, schema: NotificationSchema }]),
+    MailerModule,
+    GrpcModule,
   ],
   providers: [NotificationsService, ...HANDLERS],
   exports: [NotificationsService],

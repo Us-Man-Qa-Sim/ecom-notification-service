@@ -21,17 +21,17 @@ export class UserRegisteredHandler
 
   async handle(event: TypedEventEnvelope<'user.registered'>): Promise<void> {
     const { eventId, payload } = event;
-    const { userId } = payload;
+    const { userId, email, firstName } = payload;
 
-    const created = await this.notifications.createPending({
+    this.logger.log({ eventId, userId }, 'Handling user.registered');
+
+    await this.notifications.createAndSend({
       eventId,
       userId,
       orderId: null,
       type: TOPICS.USER_REGISTERED,
+      email,
+      firstName,
     });
-
-    if (created) {
-      this.logger.log({ eventId, userId }, 'user.registered notification queued');
-    }
   }
 }
