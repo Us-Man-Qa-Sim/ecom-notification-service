@@ -39,7 +39,7 @@
     "class-validator": "0.15.1",
     "mongoose": "9.10.4",
     "nestjs-pino": "5.3.1",
-    "nodemailer": "10.0.15",
+    "nodemailer": "10.1.1",
     "pino": "10.4.0",
     "pino-http": "11.0.0",
     "reflect-metadata": "0.2.2",
